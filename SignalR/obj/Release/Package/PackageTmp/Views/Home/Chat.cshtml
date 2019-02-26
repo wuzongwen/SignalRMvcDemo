@@ -1,0 +1,57 @@
+﻿@{
+    ViewBag.Title = "Chat";
+}
+
+<h2 class="UserName">当前用户</h2>
+<div class="container">
+    用户名:<input type="text" id="username" />
+    消息:<input type="text" id="message" />
+    <input type="button" id="sendmessage" value="Send" />
+    <input type="hidden" id="displayname" />
+    <ul id="discussion"></ul>
+</div>
+@section scripts {
+    <script src="~/Scripts/jquery-1.10.2.min.js"></script>
+    <script src="~/Scripts/jquery.signalR-2.4.0.min.js"></script>
+    <!--signalr自动生成的脚本-->
+    <script src="~/signalr/hubs"></script>
+    <script>
+
+        $(function () {
+            //声明hub代理
+            var chat = $.connection.myHub;
+
+            //创建后端要调用的前端function
+            chat.client.addNewMessageToPage = function (name, message) {
+                //将信息添加到页面上
+                $('#discussion').append('<li><strong>' + name + '</strong>:' + message + '</li>');
+            };
+            //对应后端的SendMessage函数，消息接收函数
+            chat.client.sendMessage = function (name, message) {
+                $('#discussion').append('<li><strong>' + name + '</strong>:' + message + '</li>');
+            };
+            chat.client.hello = function (message) {
+                $('#discussion').append('<li><strong>服务器广播的消息：hello</strong></li>');
+            }
+            //获取输入的名称
+            $('#displayname').val(prompt('输入你的用户名:', ''));
+            //将焦点定位在信息输入框中
+            $('#message').focus();
+            //开启链接
+            $.connection.hub.start().done(function () {
+                var username = $('#displayname').val();
+
+                //发送上线信息0
+                chat.server.sendLogin(username);
+                $('.UserName').html(username);
+
+                $('#sendmessage').click(function () {
+                    //调用后台hub的Send方法
+                    chat.server.send($('#username').val(), $('#displayname').val(), $('#message').val());
+                    //清除发送的内容，并将焦点定位到信息框
+                    $('#message').val('').focus();
+                });
+            });
+        });
+    </script>
+}
